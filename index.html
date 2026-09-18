@@ -17,13 +17,14 @@
 .drawer-backdrop{display:none}
 html,body{margin:0;height:100%;font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink)}
 body{overflow:hidden}
-.shell{height:100%;display:grid;grid-template-columns:300px 1fr;grid-template-rows:auto 1fr auto}
+.shell{height:100vh;height:100dvh;display:grid;grid-template-columns:300px 1fr;grid-template-rows:auto 1fr auto}
+main{min-height:0}
 header{grid-column:2;display:flex;align-items:center;gap:18px;padding:16px 24px;border-bottom:1px solid var(--line);background:rgba(244,241,234,.96)}
 .brand{font-weight:750;letter-spacing:-.02em;white-space:nowrap}
 .progress{height:6px;background:#ddd8ce;border-radius:999px;overflow:hidden;flex:1}
 .progress>div{height:100%;width:0;background:var(--accent);transition:width .25s ease}
 .counter{font-variant-numeric:tabular-nums;color:var(--muted);min-width:52px;text-align:right}
-main{grid-column:2;position:relative;overflow:auto;padding:32px 20px 60px;scroll-behavior:smooth}
+main{grid-column:2;position:relative;overflow:auto;overscroll-behavior:contain;padding:32px 20px 60px;scroll-behavior:smooth}
 .tip{display:none;max-width:800px;margin:0 auto}
 .tip.active{display:block}
 .tip-inner{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:0 clamp(24px,5vw,52px) clamp(24px,5vw,52px);box-shadow:0 10px 35px rgba(35,40,35,.06);overflow:clip}
