@@ -12,6 +12,9 @@
 *{box-sizing:border-box}
 *{-webkit-tap-highlight-color:rgba(35,76,61,.12)}
 .mode-toggle{display:none}
+.menu-btn{display:none}
+.drawer-quickref{display:none}
+.drawer-backdrop{display:none}
 html,body{margin:0;height:100%;font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink)}
 body{overflow:hidden}
 .shell{height:100%;display:grid;grid-template-columns:300px 1fr;grid-template-rows:auto 1fr auto}
@@ -24,7 +27,7 @@ main{grid-column:2;position:relative;overflow:auto;padding:32px 20px 60px;scroll
 .tip{display:none;max-width:800px;margin:0 auto}
 .tip.active{display:block}
 .tip-inner{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:0 clamp(24px,5vw,52px) clamp(24px,5vw,52px);box-shadow:0 10px 35px rgba(35,40,35,.06);overflow:clip}
-.tip-head{position:sticky;top:0;z-index:3;background:var(--paper);padding:clamp(24px,5vw,52px) 0 18px;border-bottom:1px solid var(--line);margin-bottom:24px}
+.tip-head{position:static;background:var(--paper);padding:clamp(24px,5vw,52px) 0 18px;border-bottom:1px solid var(--line);margin-bottom:24px}
 .eyebrow{font-size:12px;font-weight:800;letter-spacing:.12em;color:var(--accent);margin-bottom:10px}
 h1{font-size:clamp(28px,4vw,44px);line-height:1.08;letter-spacing:-.035em;margin:0}
 .content{font-size:18px;line-height:1.62}
@@ -163,17 +166,39 @@ button:disabled{opacity:.35;cursor:default}
 .challenge-suite.open{display:block}.challenge-suite iframe{border:0;width:100%;height:100%;background:#fbfaf6}
 .challenge-toc{display:none}.challenge-toc.open{display:block}.principles-toc.hidden{display:none}
 @media(max-width:800px){
- .challenge-suite{left:0}.mode-switch{display:none}
+ .challenge-suite{left:0}
  .mode-toggle{display:inline-flex;align-items:center;white-space:nowrap;padding:8px 12px;font-size:13px;border-radius:10px;background:var(--accent);color:#fff;border-color:var(--accent)}
+ /* Contents drawer */
+ .menu-btn{display:inline-flex;align-items:center;justify-content:center;padding:6px 10px;font-size:18px;line-height:1;border-radius:10px}
+ .sidebar{display:block;position:fixed;top:0;left:0;width:82%;max-width:320px;height:100%;z-index:60;transform:translateX(-103%);transition:transform .25s ease;box-shadow:0 0 40px rgba(20,22,20,.28);padding:20px 14px 40px}
+ .sidebar.open-drawer{transform:translateX(0)}
+ .drawer-backdrop{position:fixed;inset:0;background:rgba(20,22,20,.42);z-index:55}
+ .drawer-backdrop.show{display:block}
+ .drawer-quickref{display:block;width:100%;margin:0 0 14px;background:var(--accent);color:#fff;border-color:var(--accent)}
+ .mode-switch{display:grid;margin-top:0}
+ .hint{display:none}
+ .summary-btn{display:none}
+}
+@media(max-width:700px){
+ /* Rebuild the deal table: N and S match the E/W card width, centred, overlapping horizontally */
+ .bridge-table{grid-template-columns:1fr 1fr;grid-template-rows:none;grid-template-areas:"n n" "w e" "c c" "s s";gap:8px 8px}
+ .hand.n{grid-area:n}.hand.w{grid-area:w}.hand.e{grid-area:e}.hand.s{grid-area:s}
+ .hand.n,.hand.s{justify-self:center;width:calc(50% - 4px)}
+ .table-centre{grid-area:c;flex-direction:row;justify-content:center;align-items:stretch;gap:8px;min-width:0;transform:none;margin:2px 0}
+ .table-centre .lead-chip{width:auto}
+ .table-contract,.table-auction{padding:8px 12px}
+ .table-contract strong{font-size:15px}.table-auction{font-size:11px}
 }
 </style>
 </head>
 <body>
 <div class="shell">
-<aside class="sidebar"><div class="sidebar-title">CONTENTS</div>
+<aside class="sidebar" id="sidebar"><div class="sidebar-title">CONTENTS</div>
+<button class="drawer-quickref" id="drawerQuickref" type="button">Quick reference</button>
 <div class="mode-switch"><button id="modePrinciples" class="active-mode" type="button">Principles</button><button id="modeChallenges" type="button">Challenges</button></div>
 <nav id="toc" class="principles-toc"></nav><nav id="challengeToc" class="challenge-toc"></nav></aside>
 <header>
+  <button class="menu-btn" id="menuBtn" type="button" aria-label="Open contents">☰</button>
   <div class="brand" id="suiteBrand">Principle 1 / 21</div>
   <div class="progress"><div id="bar"></div></div>
   <div class="counter" id="counter"></div>
@@ -617,6 +642,7 @@ button:disabled{opacity:.35;cursor:default}
   <button id="next">Next →</button>
 </footer>
 </div>
+<div class="drawer-backdrop" id="drawerBackdrop"></div>
 
 
 <div class="deal-modal" id="dealModal" aria-hidden="true">
@@ -740,6 +766,19 @@ const modal=document.getElementById('modal');
 document.getElementById('summaryOpen').onclick=()=>modal.classList.add('open');
 document.getElementById('close').onclick=()=>modal.classList.remove('open');
 modal.onclick=e=>{if(e.target===modal)modal.classList.remove('open')};
+// Mobile contents drawer
+const sidebar=document.getElementById('sidebar'),drawerBackdrop=document.getElementById('drawerBackdrop');
+function closeDrawer(){sidebar.classList.remove('open-drawer');drawerBackdrop.classList.remove('show')}
+document.getElementById('menuBtn').onclick=()=>{sidebar.classList.add('open-drawer');drawerBackdrop.classList.add('show')};
+drawerBackdrop.onclick=closeDrawer;
+sidebar.addEventListener('click',e=>{if(e.target.closest('.toc-item'))closeDrawer()});
+document.getElementById('drawerQuickref').onclick=()=>{closeDrawer();modal.classList.add('open')};
+// Swipe to change principle (touch)
+function addSwipe(el,onLeft,onRight){let x0=null,y0=null,t0=0;
+ el.addEventListener('touchstart',e=>{const t=e.changedTouches[0];x0=t.clientX;y0=t.clientY;t0=Date.now()},{passive:true});
+ el.addEventListener('touchend',e=>{if(x0==null)return;const t=e.changedTouches[0],dx=t.clientX-x0,dy=t.clientY-y0;
+  if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)*1.7&&Date.now()-t0<700){dx<0?onLeft():onRight()}x0=null},{passive:true});}
+addSwipe(main,()=>{if(suiteMode==='principles')show(idx+1)},()=>{if(suiteMode==='principles')show(idx-1)});
 show(idx);
 
 let wheelLock=false, boundaryAccum=0;
