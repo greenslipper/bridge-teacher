@@ -1,0 +1,753 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bridge Play Principles</title>
+<style>
+:root {
+  --bg:#f4f1ea; --paper:#fffdf8; --ink:#20231f; --muted:#6d7069;
+  --accent:#234c3d; --line:#d8d3c8; --soft:#ece8df;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink)}
+body{overflow:hidden}
+.shell{height:100%;display:grid;grid-template-columns:300px 1fr;grid-template-rows:auto 1fr auto}
+header{grid-column:2;display:flex;align-items:center;gap:18px;padding:16px 24px;border-bottom:1px solid var(--line);background:rgba(244,241,234,.96)}
+.brand{font-weight:750;letter-spacing:-.02em;white-space:nowrap}
+.progress{height:6px;background:#ddd8ce;border-radius:999px;overflow:hidden;flex:1}
+.progress>div{height:100%;width:0;background:var(--accent);transition:width .25s ease}
+.counter{font-variant-numeric:tabular-nums;color:var(--muted);min-width:52px;text-align:right}
+main{grid-column:2;position:relative;overflow:auto;padding:32px 20px 60px;scroll-behavior:smooth}
+.tip{display:none;max-width:800px;margin:0 auto}
+.tip.active{display:block}
+.tip-inner{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:0 clamp(24px,5vw,52px) clamp(24px,5vw,52px);box-shadow:0 10px 35px rgba(35,40,35,.06);overflow:clip}
+.tip-head{position:sticky;top:0;z-index:3;background:var(--paper);padding:clamp(24px,5vw,52px) 0 18px;border-bottom:1px solid var(--line);margin-bottom:24px}
+.eyebrow{font-size:12px;font-weight:800;letter-spacing:.12em;color:var(--accent);margin-bottom:10px}
+h1{font-size:clamp(28px,4vw,44px);line-height:1.08;letter-spacing:-.035em;margin:0}
+.content{font-size:18px;line-height:1.62}
+.content p{margin:0 0 15px}
+.content .lead-in{font-weight:650;margin-top:22px}
+.content ul{margin:4px 0 18px;padding-left:25px}
+.content li{margin:5px 0}
+blockquote{margin:22px 0;padding:14px 18px;border-left:4px solid var(--accent);background:var(--soft);font-weight:700}
+strong{font-weight:750}
+footer{grid-column:2;display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center;padding:14px 20px;border-top:1px solid var(--line);background:rgba(244,241,234,.98)}
+button{border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:11px;padding:11px 16px;font-size:15px;font-weight:700;cursor:pointer}
+button:hover{border-color:#a9a397}
+button:disabled{opacity:.35;cursor:default}
+#prev{justify-self:start} #next{justify-self:end;background:var(--accent);color:white;border-color:var(--accent)}
+.dots{display:flex;gap:5px;max-width:48vw;overflow:hidden}
+.dot{width:7px;height:7px;border-radius:50%;background:#cbc5b9;flex:none;cursor:pointer}
+.dot.active{background:var(--accent);transform:scale(1.25)}
+.summary-btn{position:fixed;right:20px;top:76px;font-size:13px;z-index:5}
+.modal{display:none;position:fixed;inset:0;background:rgba(20,22,20,.45);z-index:10;padding:24px;overflow:auto}
+.modal.open{display:block}
+.modal-card{max-width:800px;margin:35px auto;background:var(--paper);border-radius:18px;padding:36px;border:1px solid var(--line)}
+.modal-head{display:flex;justify-content:space-between;align-items:center;gap:20px}
+.modal-head h2{margin:0;font-size:28px}
+.close{padding:8px 12px}
+.hint{font-size:13px;color:var(--muted);text-align:center}
+@media(max-width:600px){
+ header{padding:12px 14px} .brand{font-size:14px} main{padding:20px 10px 70px}
+ .tip-inner{border-radius:14px;padding:0 20px 24px}.tip-head{padding:24px 0 15px;margin-bottom:20px} .content{font-size:16px}
+ footer{padding:10px} .dots{display:none} .summary-btn{top:64px;right:10px}
+}
+
+.sidebar{grid-column:1;grid-row:1 / 4;border-right:1px solid var(--line);background:var(--paper);overflow:auto;padding:22px 14px}
+.sidebar-title{font-size:12px;font-weight:800;letter-spacing:.12em;color:var(--muted);padding:0 10px 12px}
+.toc-item{display:block;width:100%;text-align:left;border:0;background:transparent;border-radius:9px;padding:9px 10px;font-size:14px;font-weight:600;line-height:1.25;color:var(--ink)}
+.toc-item:hover{background:var(--soft)}
+.toc-item.active{background:var(--soft);color:var(--accent);font-weight:800}
+.toc-group{margin:4px 0 16px}
+.toc-group-title{font-size:11px;font-weight:850;letter-spacing:.1em;color:var(--muted);padding:8px 10px 5px;text-transform:uppercase}
+.toc-group .toc-item{padding-left:12px}
+
+@media(max-width:800px){
+ .shell{grid-template-columns:1fr}
+ .sidebar{display:none}
+ header,main,footer{grid-column:1}
+}
+
+.example-launch{margin:28px 0 4px;padding-top:22px;border-top:1px solid var(--line)}
+.example-launch button{background:var(--accent);color:white;border-color:var(--accent);font-size:16px}
+.deal-modal{display:none;position:fixed;inset:0;z-index:30;background:rgba(20,22,20,.55);padding:18px;overflow:auto}
+.deal-modal.open{display:block}
+.deal-card{max-width:980px;margin:16px auto;background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:24px;min-height:calc(100vh - 32px)}
+.deal-top{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:14px}
+.deal-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:7px}
+.meta-pill{background:var(--soft);border-radius:999px;padding:5px 10px;font-size:13px;font-weight:700}
+.deal-question{text-align:center;font-size:21px;font-weight:800;margin:12px 0 18px}
+.table-wrap{max-width:760px;margin:0 auto}
+.bridge-table{display:grid;grid-template-columns:1fr 1fr 1fr;grid-template-rows:auto auto auto;gap:10px;align-items:center}
+.hand{background:#fff;border:1px solid var(--line);border-radius:13px;padding:12px 14px;min-height:144px;box-shadow:0 4px 14px rgba(30,35,30,.04)}
+.hand.n{grid-column:2;grid-row:1}.hand.w{grid-column:1;grid-row:2}.hand.e{grid-column:3;grid-row:2}.hand.s{grid-column:2;grid-row:3}
+.seat{font-size:11px;font-weight:850;letter-spacing:.12em;color:var(--muted);margin-bottom:7px}
+.suitline{display:grid;grid-template-columns:20px 1fr;gap:5px;font-family:Georgia,"Times New Roman",serif;font-size:19px;line-height:1.35;white-space:nowrap}
+.red{color:#b3261e}.black{color:#1e2521}
+.facedown{background:repeating-linear-gradient(135deg,#274d40,#274d40 8px,#315b4c 8px,#315b4c 16px);border-color:#24483c;display:flex;align-items:center;justify-content:center;color:white;text-align:center}
+.facedown .backmark{font-size:12px;font-weight:800;letter-spacing:.12em;opacity:.9}
+.deal-actions{text-align:center;margin:20px 0}
+.reveal-btn{background:var(--accent);color:white;border-color:var(--accent);padding:13px 24px;font-size:16px}
+.answer{display:none;max-width:760px;margin:20px auto 0;border-top:1px solid var(--line);padding-top:22px}
+.answer.open{display:block}
+.answer h3{margin:0 0 8px;font-size:22px}.answer p{font-size:17px;line-height:1.58;margin:0 0 13px}
+.keybox{background:var(--soft);border-left:4px solid var(--accent);padding:14px 16px;margin-bottom:15px;font-size:18px;font-weight:750}
+.full-label{text-align:center;font-size:12px;font-weight:850;letter-spacing:.12em;color:var(--muted);margin:24px 0 10px}
+@media(max-width:700px){
+ .deal-modal{padding:0}.deal-card{margin:0;border-radius:0;min-height:100vh;padding:16px}
+ .bridge-table{gap:6px}.hand{padding:9px;min-height:126px}.suitline{font-size:15px;grid-template-columns:17px 1fr}
+ .deal-question{font-size:18px}.deal-top h2{font-size:21px;margin:0}
+}
+
+
+/* v5 deal-table hierarchy */
+.deal-top{margin-bottom:6px}
+.deal-meta{margin-top:10px}
+.contract-pill{background:var(--accent);color:#fff;font-size:15px;padding:7px 13px}
+.auction-pill{font-weight:650}
+.deal-question{margin:18px 0 14px}
+.bridge-table{grid-template-columns:minmax(180px,1fr) 230px minmax(180px,1fr);grid-template-rows:auto 190px auto;gap:12px 16px}
+.table-centre{grid-column:2;grid-row:2;align-self:center;justify-self:center;text-align:center}
+.lead-chip{display:inline-flex;flex-direction:column;gap:2px;align-items:center;background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:9px 15px;box-shadow:0 3px 10px rgba(30,35,30,.04)}
+.lead-label{font-size:10px;font-weight:850;letter-spacing:.12em;color:var(--muted)}
+.lead-card{font-family:Georgia,"Times New Roman",serif;font-size:22px;font-weight:700}
+.hand{padding:0;overflow:hidden;min-height:154px}
+.hand-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;background:var(--soft);border-bottom:1px solid var(--line)}
+.hand-head .seat{margin:0}
+.role-tag{font-size:10px;font-weight:850;letter-spacing:.08em;color:var(--accent)}
+.hand-body{padding:9px 13px 11px}
+.facedown{padding:0;display:block}
+.facedown .hand-head{background:rgba(255,255,255,.12);border-bottom-color:rgba(255,255,255,.18)}
+.facedown .seat,.facedown .role-tag{color:#fff}
+.cardback-body{height:118px;display:flex;align-items:center;justify-content:center}
+.cardback-pips{font-size:25px;letter-spacing:5px;opacity:.45}
+.deal-instruction{text-align:center;color:var(--muted);font-size:13px;margin:-5px 0 15px}
+@media(max-width:700px){
+ .bridge-table{grid-template-columns:minmax(105px,1fr) 88px minmax(105px,1fr);grid-template-rows:auto 150px auto;gap:7px}
+ .hand{min-height:132px}.hand-head{padding:6px 8px}.hand-body{padding:7px 8px}
+ .role-tag{font-size:8px}.table-centre{transform:scale(.88)}
+ .lead-chip{padding:7px 9px}.lead-card{font-size:18px}.cardback-body{height:98px}
+}
+
+
+.deal-meta-centred{justify-content:center;margin:0 0 9px}
+.deal-meta-centred + .deal-instruction{margin:0 0 15px}
+
+
+/* v7: put all deal facts in the table */
+.deal-instruction{margin:0 0 14px}
+.table-centre{display:flex;flex-direction:column;gap:8px;min-width:170px}
+.table-contract,.table-auction{border:1px solid var(--line);border-radius:12px;padding:9px 12px;background:#fff;text-align:center;line-height:1.2}
+.table-contract{background:var(--accent);color:white;border-color:var(--accent)}
+.table-contract span,.table-auction span{display:block;font-size:9px;font-family:Inter,ui-sans-serif,sans-serif;font-weight:850;letter-spacing:.13em;margin-bottom:3px;opacity:.78}
+.table-contract strong{font-size:17px}
+.table-auction{font-size:12px;font-weight:700}
+.lead-chip{width:100%}
+@media(max-width:700px){
+ .table-centre{min-width:82px;gap:5px}
+ .table-contract,.table-auction{padding:6px 5px}
+ .table-contract strong{font-size:13px}.table-auction{font-size:9px}
+}
+
+</style>
+</head>
+<body>
+<div class="shell">
+<aside class="sidebar"><div class="sidebar-title">CONTENTS</div><nav id="toc"></nav></aside>
+<header>
+  <div class="brand">Bridge Play Principles</div>
+  <div class="progress"><div id="bar"></div></div>
+  <div class="counter" id="counter"></div>
+</header>
+<button class="summary-btn" id="summaryOpen">Quick reference</button>
+<main id="main">
+
+    <section class="tip" data-tip="1">
+      <div class="tip-inner">
+        <div class="tip-head"><div class="eyebrow">TIP 1 OF 21</div>
+        <h1>Draw trumps as soon as possible — unless you need them for something</h1></div>
+        <div class="content"><p><strong>Rule:</strong> In a suit contract, your default should be to draw the opponents&#x27; trumps early.</p>
+<p><strong>Rationale:</strong> Every trump the opponents retain is a card that can unexpectedly beat one of your winners. Once their trumps are gone, your side-suit winners are safe from being ruffed.</p>
+<p class="lead-in"><strong>Example:</strong> You&#x27;re in 4♠ with:</p>
+<ul>
+<li>You: ♠AKQJx</li>
+<li>Dummy: ♠xxx</li>
+</ul>
+<p>You have eight trumps. If you start cashing your excellent diamonds while opponents still have five spades between them, one may run out of diamonds and ruff a winner.</p>
+<p>Instead, play ♠A, ♠K, ♠Q. If they&#x27;re 3–2, all opposing trumps are gone. <strong>Now cash the diamonds safely.</strong></p>
+<p><strong>Main exception:</strong> You need your trumps for ruffing, entries, a crossruff, etc. This leads directly to Rule 2.</p><div class="example-launch"><button class="deal-open" data-deal="1">Try the full-deal example →</button></div></div>
+      </div>
+    </section>
+    <section class="tip" data-tip="2">
+      <div class="tip-inner">
+        <div class="tip-head"><div class="eyebrow">TIP 2 OF 21</div>
+        <h1>Ruff losers in the short-trump hand before drawing trumps</h1></div>
+        <div class="content"><p><strong>Rule:</strong> If you need dummy&#x27;s trumps to ruff losers, do that before exhausting dummy&#x27;s trumps.</p>
+<p><strong>Rationale:</strong> Ruffing in the <strong>short-trump hand</strong> usually creates extra tricks. Ruffing in your long-trump hand usually doesn&#x27;t.</p>
+<p class="lead-in">Suppose:</p>
+<ul>
+<li>You: ♠AKQJx ♥xx</li>
+<li>Dummy: ♠xxx ♥Axx</li>
+</ul>
+<p>You have two heart losers.</p>
+<p>If you immediately draw three rounds of trumps, dummy has no spades left. Your heart losers remain losers.</p>
+<p>Instead, arrange to <strong>ruff one or both hearts in dummy</strong>, then draw trumps.</p>
+<p class="lead-in">This gives a very useful question before drawing trumps:</p>
+<blockquote><strong>Do I need dummy&#x27;s trumps for anything?</strong></blockquote>
+<p>If no → draw trumps.</p>
+<p>If yes → do that thing first.</p><div class="example-launch"><button class="deal-open" data-deal="2">Try the full-deal example →</button></div></div>
+      </div>
+    </section>
+    <section class="tip" data-tip="3">
+      <div class="tip-inner">
+        <div class="tip-head"><div class="eyebrow">TIP 3 OF 21</div>
+        <h1>Take essential discards before drawing trumps when necessary</h1></div>
+        <div class="content"><p>This sounds contradictory to Rule 1, but isn&#x27;t.</p>
+<p><strong>Rule:</strong> If you have a side-suit winner that can dispose of an <em>immediate</em> loser, sometimes cash it before drawing trumps.</p>
+<p><strong>Rationale:</strong> Drawing trumps may require giving the opponents the lead. If they can then cash your loser, you&#x27;ve missed your opportunity to discard it.</p>
+<p class="lead-in"><strong>Example:</strong> You&#x27;re in 4♠. Dummy has:</p>
+<ul>
+<li>♣A</li>
+<li>♦AKQ</li>
+</ul>
+<p>You have a losing ♣K? Let&#x27;s make it clearer: you have <strong>one losing heart</strong>, and dummy&#x27;s ♦Q is an established winner on which you can throw it.</p>
+<p>But opponents hold ♠A.</p>
+<p>If you start drawing trumps, they win ♠A and may immediately cash the ♥A/K or whatever your vulnerable heart loser is.</p>
+<p class="lead-in">Instead:</p>
+<p><strong>cash ♦Q → discard heart loser → then attack trumps.</strong></p>
+<p class="lead-in">The distinction is:</p>
+<blockquote><strong>If the discard can wait safely, draw trumps first. If it can&#x27;t, take the discard now.</strong></blockquote><div class="example-launch"><button class="deal-open" data-deal="3">Try the full-deal example →</button></div></div>
+      </div>
+    </section>
+    <section class="tip" data-tip="4">
+      <div class="tip-inner">
+        <div class="tip-head"><div class="eyebrow">TIP 4 OF 21</div>
+        <h1>Ruffing in the long-trump hand usually doesn&#x27;t gain a trick</h1></div>
+        <div class="content"><p>This is worth understanding rather than merely memorising.</p>
+<p class="lead-in">Suppose you have:</p>
+<ul>
+<li>Hand: 5 spades</li>
+<li>Dummy: 3 spades</li>
+</ul>
+<p>You normally expect your five spades to produce roughly <strong>five trump tricks</strong>.</p>
+<p>If you ruff something in your hand, you&#x27;ve used one of those five spades. You still tend to make five trump tricks total.</p>
+<p class="lead-in">But if you ruff in dummy, you can make:</p>
+<p><strong>5 trump tricks from hand + 1 ruff in dummy = 6 tricks.</strong></p>
+<p class="lead-in">So:</p>
+<blockquote><strong>Ruffing in the short hand creates extra trump tricks.</strong></blockquote>
+<p><strong>Exception:</strong> Ruffing in the long hand can still be necessary to prevent a loser, maintain control, set up a suit, etc. It just doesn&#x27;t ordinarily <em>increase</em> your total trump tricks.</p><div class="example-launch"><button class="deal-open" data-deal="4">Try the full-deal example →</button></div></div>
+      </div>
+    </section>
+    <section class="tip" data-tip="5">
+      <div class="tip-inner">
+        <div class="tip-head"><div class="eyebrow">TIP 5 OF 21</div>
+        <h1>Play high cards from the short side first</h1></div>
+        <div class="content"><p>One of the most practically useful rules.</p>
+<p class="lead-in">Suppose:</p>
+<ul>
+<li>Hand: ♦Qx</li>
+<li>Dummy: ♦AKxxx</li>
+</ul>
+<p>You want five diamond tricks assuming a reasonable split.</p>
+<p>Play <strong>Q first</strong>, then cross to A/K.</p>
+<p><strong>Rationale:</strong> You want to end up in the hand containing the <strong>long cards</strong>.</p>
+<p>If you cash A-K first, then Q, you&#x27;ll finish in the wrong hand and may have no way back to dummy&#x27;s remaining diamonds.</p>
+<p class="lead-in">The general rule is:</p>
+<blockquote><strong>When cashing equivalent winners between two hands, preserve the entries to the hand containing the length.</strong></blockquote>
+<p>That&#x27;s the real rule; &quot;high cards from the short side first&quot; is the convenient shortcut.</p><div class="example-launch"><button class="deal-open" data-deal="5">Try the full-deal example →</button></div></div>
+      </div>
+    </section>
+    <section class="tip" data-tip="6">
+      <div class="tip-inner">
+        <div class="tip-head"><div class="eyebrow">TIP 6 OF 21</div>
+        <h1>Preserve entries to your long suit</h1></div>
+        <div class="content"><p>This is the broader concept behind Rule 5.</p>
+<p class="lead-in">Suppose dummy has:</p>
+<p><strong>♦KQJ10x</strong></p>
+<p class="lead-in">and you have:</p>
+<p><strong>♦xx</strong></p>
+<p>The ♦A is outstanding.</p>
+<p>You can easily establish four diamond winners by forcing out the ace.</p>
+<p>But imagine dummy&#x27;s <strong>only outside entry is ♣A</strong>.</p>
+<p>If you casually cash ♣A early, then play diamonds and the opponents take ♦A, you might never get back to dummy.</p>
+<p>Your four beautiful diamond winners are useless.</p>
+<p class="lead-in">Instead:</p>
+<p><strong>attack diamonds → force out ♦A → retain ♣A → later use ♣A to reach the established diamonds.</strong></p>
+<p class="lead-in">So when you see a long suit, ask two questions:</p>
+<blockquote><strong>How do I establish it?</strong></blockquote>
+<blockquote><strong>How do I get back to it afterwards?</strong></blockquote>
+<p>The second question is surprisingly easy to forget.</p><div class="example-launch"><button class="deal-open" data-deal="6">Try the full-deal example →</button></div></div>
+      </div>
+    </section>
+    <section class="tip" data-tip="7">
+      <div class="tip-inner">
+        <div class="tip-head"><div class="eyebrow">TIP 7 OF 21</div>
+        <h1>Establish long suits early; cash winners late</h1></div>
+        <div class="content"><p class="lead-in">Suppose in 3NT you have:</p>
+<p><strong>♠AK</strong></p>
+<p><strong>♥AK</strong></p>
+<p><strong>♦A</strong></p>
+<p><strong>♣KQJ10x</strong></p>
+<p>That&#x27;s seven immediate winners, but clubs can potentially give you another four.</p>
+<p>You shouldn&#x27;t necessarily cash ♠AK, ♥AK and ♦A first.</p>
+<p>Instead, <strong>attack clubs immediately</strong>.</p>
+<p>Why?</p>
+<p>Because you still have controls in all the other suits. You can afford to lose the ♣A while opponents can&#x27;t run anything against you.</p>
+<p>After ♣A is gone, you have your established club winners plus your existing winners.</p>
+<p class="lead-in">General NT strategy:</p>
+<blockquote><strong>Identify the suit that will provide your missing tricks and work on it immediately.</strong></blockquote>
+<p>Don&#x27;t cash winners simply because they&#x27;re winners.</p><div class="example-launch"><button class="deal-open" data-deal="7">Try the full-deal example →</button></div></div>
+      </div>
+    </section>
+    <section class="tip" data-tip="8">
+      <div class="tip-inner">
+        <div class="tip-head"><div class="eyebrow">TIP 8 OF 21</div>
+        <h1>Lose unavoidable losers early, while you still have control</h1></div>
+        <div class="content"><p>Related to the above.</p>
+<p class="lead-in">Suppose you&#x27;re in 3NT and have:</p>
+<ul>
+<li>Hand: ♠Axx ♥AKx ♦KQJ10 ♣Ax</li>
+<li>Dummy: ♠Kxx ♥Qxx ♦xxx ♣KQx</li>
+</ul>
+<p>You need nine tricks. You have <strong>7 immediate winners</strong>: two spades, three hearts and two clubs. Diamonds can provide the extra tricks you need, but the opponents hold ♦A.</p>
+<p>You&#x27;re therefore going to lose to ♦A eventually.</p>
+<p>Attack diamonds <strong>now</strong>, while you still have aces/kings stopping the opponents&#x27; other suits. Once ♦A is gone, your remaining high diamonds are established.</p>
+<p>If instead you first cash all seven of your immediate winners and <em>then</em> play diamonds, an opponent wins ♦A after you&#x27;ve used up all your controls. They may now be able to cash several tricks before you regain the lead.</p>
+<p class="lead-in">The idea is:</p>
+<blockquote><strong>If you&#x27;re inevitably going to give them the lead, choose when to do it.</strong></blockquote>
+<p>Often earlier is safer.</p><div class="example-launch"><button class="deal-open" data-deal="8">Try the full-deal example →</button></div></div>
+      </div>
+    </section>
+    <section class="tip" data-tip="9">
+      <div class="tip-inner">
+        <div class="tip-head"><div class="eyebrow">TIP 9 OF 21</div>
+        <h1>Don&#x27;t automatically cash your aces</h1></div>
+        <div class="content"><p class="lead-in">Beginners see:</p>
+<p><strong>A K Q</strong></p>
+<p>and think &quot;three tricks.&quot;</p>
+<p class="lead-in">Strong players also think:</p>
+<p><strong>controls and entries.</strong></p>
+<p class="lead-in">Suppose you&#x27;re in 3NT. West leads a spade, and between your hand and dummy you have:</p>
+<ul>
+<li>Hand: ♠Axx</li>
+<li>Dummy: ♠xx</li>
+</ul>
+<p>Suppose the bidding and opening lead suggest West started with five spades and East with three.</p>
+<p>If you take ♠A on the first round, West still has four spades. If East later gains the lead, East can return a spade and West may be able to cash the rest of the suit.</p>
+<p class="lead-in">Instead, you can sometimes duck the first two rounds and take ♠A on the third:</p>
+<p><strong>duck → duck → take ♠A.</strong></p>
+<p>By then East has played all three of their original spades. If East later gains the lead, they have no spade left to return to West. You&#x27;ve broken the defenders&#x27; communication.</p>
+<p>That&#x27;s the <strong>hold-up play</strong>.</p>
+<p>Likewise, an ace in dummy might be your only entry to a long suit, so cashing it too early can strand your winners.</p>
+<p>For example, dummy has ♦KQJ10x and ♣A, and ♣A is your only entry to dummy. If you cash ♣A before forcing out ♦A, you may later establish the diamonds but have no way back to dummy to cash them. Keep ♣A as the entry until the diamonds are established.</p>
+<p class="lead-in">So:</p>
+<blockquote><strong>An ace isn&#x27;t merely a winner. It&#x27;s control over when that suit can be run.</strong></blockquote><div class="example-launch"><button class="deal-open" data-deal="9">Try the full-deal example →</button></div></div>
+      </div>
+    </section>
+    <section class="tip" data-tip="10">
+      <div class="tip-inner">
+        <div class="tip-head"><div class="eyebrow">TIP 10 OF 21</div>
+        <h1>Lead towards honours, not away from them</h1></div>
+        <div class="content"><p class="lead-in">Suppose:</p>
+<ul>
+<li>Hand: ♥AQ</li>
+<li>Dummy: ♥xx</li>
+</ul>
+<p>and ♥K is missing.</p>
+<p>Lead a small heart <strong>from dummy towards AQ</strong>.</p>
+<p>If the opponent before AQ plays low, play Q.</p>
+<p>If K is favourably placed, Q wins.</p>
+<p>If instead you lead <strong>Q away from AQ</strong>, the opponent holding K after you simply covers it. You&#x27;ve gained nothing.</p>
+<p class="lead-in">Another example:</p>
+<p><strong>Kx opposite xx</strong></p>
+<p>Lead small <strong>towards K</strong>.</p>
+<p>If the ace is before your king, they have an unpleasant choice: play A and establish your K, or play low and let your K win.</p>
+<p class="lead-in">General principle:</p>
+<blockquote><strong>Unsupported honours like having small cards led towards them.</strong></blockquote><div class="example-launch"><button class="deal-open" data-deal="10">Try the full-deal example →</button></div></div>
+      </div>
+    </section>
+    <section class="tip" data-tip="11">
+      <div class="tip-inner">
+        <div class="tip-head"><div class="eyebrow">TIP 11 OF 21</div>
+        <h1>Don&#x27;t take a finesse you don&#x27;t need</h1></div>
+        <div class="content"><p>Suppose you&#x27;re in 4♠ and need ten tricks.</p>
+<p>You count <strong>10 certain tricks</strong>.</p>
+<p class="lead-in">You also hold:</p>
+<p><strong>♥AQ</strong></p>
+<p>with K missing.</p>
+<p>Taking the finesse might produce an eleventh trick.</p>
+<p>But if it loses, perhaps the opponents can cash three more tricks.</p>
+<p>Why take the risk?</p>
+<p>Take your ten winners and make the contract.</p>
+<p class="lead-in">This sounds obvious, but it&#x27;s an important bridge mindset:</p>
+<blockquote><strong>The objective isn&#x27;t to win the maximum conceivable number of tricks. It&#x27;s to make the contract as reliably as possible.</strong></blockquote>
+<p>In duplicate, overtricks matter, so the calculation can change—but making the contract remains enormously important.</p><div class="example-launch"><button class="deal-open" data-deal="11">Try the full-deal example →</button></div></div>
+      </div>
+    </section>
+    <section class="tip" data-tip="12">
+      <div class="tip-inner">
+        <div class="tip-head"><div class="eyebrow">TIP 12 OF 21</div>
+        <h1>Try your chances in the right order</h1></div>
+        <div class="content"><p>Suppose you need one additional trick.</p>
+<p class="lead-in">You have:</p>
+<p><strong>♣AKxx opposite ♣xxx</strong></p>
+<p>and</p>
+<p><strong>♥AQ opposite ♥xx</strong></p>
+<p>You could immediately take the 50% heart finesse.</p>
+<p>But perhaps clubs splitting 3–3 will also provide your ninth trick. You and dummy have seven clubs, so the opponents have six. If those six are split 3–3, each opponent must follow to the first three rounds of clubs. After you play ♣A, ♣K and then a third club, all six opposing clubs — including ♣Q and ♣J wherever they started — have been forced out because the defenders must follow suit if they can. Your fourth club is then a winner.</p>
+<p>If you can safely cash ♣A-K and test clubs <strong>without compromising the heart finesse</strong>, do that first.</p>
+<p>If clubs break → great, no finesse required.</p>
+<p>If not → take the heart finesse.</p>
+<p>You&#x27;ve effectively given yourself <strong>two chances rather than one</strong>.</p>
+<p class="lead-in">General principle:</p>
+<blockquote><strong>Try chances that leave other chances available before taking an all-or-nothing line.</strong></blockquote>
+<p>This becomes a huge part of more advanced declarer play.</p><div class="example-launch"><button class="deal-open" data-deal="12">Try the full-deal example →</button></div></div>
+      </div>
+    </section>
+    <section class="tip" data-tip="13">
+      <div class="tip-inner">
+        <div class="tip-head"><div class="eyebrow">TIP 13 OF 21</div>
+        <h1>Count trumps every hand</h1></div>
+        <div class="content"><p>You and dummy have eight spades.</p>
+<p>Therefore opponents have <strong>five</strong>.</p>
+<p>First round: both follow.</p>
+<p><strong>3 remain.</strong></p>
+<p>Second round: both follow.</p>
+<p><strong>1 remains.</strong></p>
+<p>Don&#x27;t think &quot;I played two rounds of trumps.&quot;</p>
+<p class="lead-in">Think:</p>
+<blockquote><strong>One opposing trump remains.</strong></blockquote>
+<p>Now decide whether it matters.</p>
+<p>If you have loads of side-suit winners, it probably does: <strong>draw it.</strong></p>
+<p>If drawing it would consume your last trump in dummy and you need that trump for a ruff, perhaps leave it outstanding temporarily.</p><div class="example-launch"><button class="deal-open" data-deal="13">Try the full-deal example →</button></div></div>
+      </div>
+    </section>
+    <section class="tip" data-tip="14">
+      <div class="tip-inner">
+        <div class="tip-head"><div class="eyebrow">TIP 14 OF 21</div>
+        <h1>When someone shows out, stop and reconstruct</h1></div>
+        <div class="content"><p>You have eight hearts. Opponents therefore have five.</p>
+<p class="lead-in">You play ♥A:</p>
+<p>East follows, West follows.</p>
+<p class="lead-in">You play ♥K:</p>
+<p>East follows, <strong>West discards</strong>.</p>
+<p class="lead-in">You now know opponents started:</p>
+<p><strong>West = 1 heart</strong></p>
+<p><strong>East = 4 hearts</strong></p>
+<p>Not approximately. <strong>Exactly.</strong></p>
+<p>That information also tells you about the other suits. If West has already shown six diamonds and one heart, you know <strong>7 of West&#x27;s 13 cards</strong>, leaving only six spaces for clubs and spades.</p>
+<p>This is how counting gradually turns into knowing opponents&#x27; hands.</p><div class="example-launch"><button class="deal-open" data-deal="14">Try the full-deal example →</button></div></div>
+      </div>
+    </section>
+    <section class="tip" data-tip="15">
+      <div class="tip-inner">
+        <div class="tip-head"><div class="eyebrow">TIP 15 OF 21</div>
+        <h1>Second hand low</h1></div>
+        <div class="content"><p>Now defence.</p>
+<p class="lead-in">Suppose hearts are played like this:</p>
+<ul>
+<li>Declarer leads: ♥x</li>
+<li>You, second to play: ♥Kxx</li>
+<li>Dummy: ♥AQx</li>
+</ul>
+<p>Usually play low.</p>
+<p>Why?</p>
+<p>If declarer plays dummy&#x27;s Q, your K remains above it and can win later.</p>
+<p>If you unnecessarily play K immediately, dummy plays A and Q becomes established. You&#x27;ve spent your K without gaining anything.</p>
+<p>More generally, playing an honour second-hand can unnecessarily sacrifice it before declarer has committed an honour.</p>
+<p class="lead-in">Hence:</p>
+<blockquote><strong>Second hand low.</strong></blockquote>
+<p>It&#x27;s a default, not a law.</p><div class="example-launch"><button class="deal-open" data-deal="15">Try the full-deal example →</button></div></div>
+      </div>
+    </section>
+    <section class="tip" data-tip="16">
+      <div class="tip-inner">
+        <div class="tip-head"><div class="eyebrow">TIP 16 OF 21</div>
+        <h1>Third hand high — more precisely, play the highest card necessary</h1></div>
+        <div class="content"><p class="lead-in">Now suppose partner leads a small heart and dummy plays low:</p>
+<ul>
+<li>Partner: ♥Q10xx (leads a small heart)</li>
+<li>Dummy: ♥xxx</li>
+<li>You, third to play: ♥KJx</li>
+<li>Declarer: holds ♥A among their hearts</li>
+</ul>
+<p>Usually play ♥K.</p>
+<p>Why?</p>
+<p>Partner has attacked this suit and you&#x27;re trying to prevent declarer winning cheaply. The play may go:</p>
+<p><strong>partner&#x27;s small heart → dummy low → your ♥K → declarer&#x27;s ♥A</strong></p>
+<p>Your K has forced out declarer&#x27;s ace. Partner is still left with ♥Q10x, so your side is now much closer to establishing heart winners when it regains the lead.</p>
+<p>If you casually play low instead, declarer may be able to win the trick with a lower card while keeping ♥A for later.</p>
+<p class="lead-in">Hence the useful beginner rule:</p>
+<blockquote><strong>Second hand low; third hand high.</strong></blockquote>
+<p>More precisely, third hand should usually play the <strong>highest card necessary</strong> to force declarer&#x27;s higher card. As you learn more, there are situations with sequences of honours where that won&#x27;t literally mean playing your highest card.</p>
+<p>These two rules work together: second hand generally waits; third hand generally tries to force declarer&#x27;s higher card.</p><div class="example-launch"><button class="deal-open" data-deal="16">Try the full-deal example →</button></div></div>
+      </div>
+    </section>
+    <section class="tip" data-tip="17">
+      <div class="tip-inner">
+        <div class="tip-head"><div class="eyebrow">TIP 17 OF 21</div>
+        <h1>Cover an honour with an honour — when it promotes something</h1></div>
+        <div class="content"><p class="lead-in">Suppose hearts are arranged like this:</p>
+<ul>
+<li>Declarer: ♥Q10...</li>
+<li>You: ♥Kx</li>
+<li>Dummy: ♥Axx</li>
+<li>Partner: ♥J9x</li>
+</ul>
+<p>Declarer leads ♥Q.</p>
+<p class="lead-in">If you cover:</p>
+<p><strong>♥Q → ♥K → ♥A</strong></p>
+<p>it looks as though you&#x27;ve wasted your king. But the Q and K have both disappeared. Partner&#x27;s ♥J is now above declarer&#x27;s remaining ♥10, so your sacrifice of the king has <strong>promoted partner&#x27;s jack into a potential winner</strong>.</p>
+<p>If you don&#x27;t cover, declarer&#x27;s ♥Q can win the first trick while declarer still retains ♥10 and dummy still retains ♥A. Your king has not forced either of those cards out.</p>
+<p>The real rule isn&#x27;t &quot;always cover an honour.&quot;</p>
+<p class="lead-in">It&#x27;s:</p>
+<blockquote><strong>Cover when doing so can promote a card for your side.</strong></blockquote>
+<p>With sequences, particularly, you sometimes wait until the <strong>last</strong> honour is played.</p><div class="example-launch"><button class="deal-open" data-deal="17">Try the full-deal example →</button></div></div>
+      </div>
+    </section>
+    <section class="tip" data-tip="18">
+      <div class="tip-inner">
+        <div class="tip-head"><div class="eyebrow">TIP 18 OF 21</div>
+        <h1>Don&#x27;t give declarer unnecessary ruffs</h1></div>
+        <div class="content"><p class="lead-in">Suppose you&#x27;re defending 4♠. Hearts have been played and you discover:</p>
+<ul>
+<li>Declarer: no hearts left</li>
+<li>Dummy: still has spade trumps</li>
+<li>Your side: still holds high hearts that would normally be winners</li>
+</ul>
+<p>If you lead another heart, declarer simply ruffs it with a spade. Your high heart isn&#x27;t a useful winner while declarer is void and still has trumps.</p>
+<p>So switch to another suit rather than giving declarer a free ruff.</p>
+<p><strong>Related application: sometimes defenders should lead trumps.</strong></p>
+<p class="lead-in">Suppose instead dummy has:</p>
+<ul>
+<li>♠876</li>
+<li>♥4</li>
+</ul>
+<p>Dummy has three trumps and a singleton heart, while declarer appears to have several losing hearts. Declarer&#x27;s plan may be to ruff those heart losers with dummy&#x27;s small spades.</p>
+<p>If your side gains the lead and plays a trump, you remove one of dummy&#x27;s potential ruffs. If you get in again and play another trump, you may remove most or all of dummy&#x27;s ruffing power before declarer can use it.</p>
+<blockquote><strong>If dummy&#x27;s small trumps are clearly going to be used to ruff declarer&#x27;s losers, consider leading trumps yourself.</strong></blockquote><div class="example-launch"><button class="deal-open" data-deal="18">Try the full-deal example →</button></div></div>
+      </div>
+    </section>
+    <section class="tip" data-tip="19">
+      <div class="tip-inner">
+        <div class="tip-head"><div class="eyebrow">TIP 19 OF 21</div>
+        <h1>Cash defensive winners when they&#x27;re about to disappear</h1></div>
+        <div class="content"><p>You&#x27;re defending 4♠.</p>
+<p class="lead-in">Suppose:</p>
+<ul>
+<li>Declarer: ♥K3</li>
+<li>You: ♥A7</li>
+<li>Dummy: has established diamond winners, say ♦AKQ...</li>
+</ul>
+<p>At the moment, declarer&#x27;s ♥3 is a heart loser that your side can potentially cash. But if declarer gets to dummy and starts cashing diamonds, they can discard ♥3 on one of those winners.</p>
+<p>Your ♥A will still be an ace, but the heart loser you hoped to capture has disappeared. So if you have the opportunity and can see the discard coming, you may need to take the heart trick now.</p>
+<p class="lead-in">Ask:</p>
+<blockquote><strong>&quot;If I don&#x27;t take this trick now, could declarer throw the loser away?&quot;</strong></blockquote>
+<p>If yes, <strong>cash it now</strong>.</p>
+<p>But if dummy has no source of discards and your ace isn&#x27;t going anywhere, don&#x27;t panic. Keeping it may be better.</p>
+<p class="lead-in">So defence involves distinguishing:</p>
+<p><strong>active defence:</strong> take/create tricks urgently because they may disappear.</p>
+<p>from</p>
+<p><strong>passive defence:</strong> don&#x27;t give declarer anything they couldn&#x27;t make themselves.</p><div class="example-launch"><button class="deal-open" data-deal="19">Try the full-deal example →</button></div></div>
+      </div>
+    </section>
+    <section class="tip" data-tip="20">
+      <div class="tip-inner">
+        <div class="tip-head"><div class="eyebrow">TIP 20 OF 21</div>
+        <h1>Use the auction as part of card play</h1></div>
+        <div class="content"><p>This is perhaps the most important &quot;advanced beginner → good player&quot; transition.</p>
+<p>Suppose opponent opened <strong>1NT (15–17)</strong>.</p>
+<p>Dummy comes down with 8 HCP.</p>
+<p>You have 10 HCP.</p>
+<p class="lead-in">That&#x27;s already:</p>
+<p><strong>15–17 + 8 + 10 = 33–35 HCP accounted for.</strong></p>
+<p>Your partner therefore has only <strong>5–7 HCP</strong>.</p>
+<p>That radically constrains where missing honours can be.</p>
+<p class="lead-in">Likewise:</p>
+<p><strong>Opponent opened 1♠ → probably 5+ spades.</strong></p>
+<p>Later they&#x27;ve shown 4 hearts.</p>
+<p>You already know <strong>at least nine of their thirteen cards</strong>.</p>
+<p>The auction doesn&#x27;t finish when the opening lead is made. <strong>It&#x27;s evidence you should continue using for all 13 tricks.</strong></p><div class="example-launch"><button class="deal-open" data-deal="20">Try the full-deal example →</button></div></div>
+      </div>
+    </section>
+    <section class="tip" data-tip="21">
+      <div class="tip-inner">
+        <div class="tip-head"><div class="eyebrow">TIP 21 OF 21</div>
+        <h1>Return partner&#x27;s suit — unless you have a reason not to</h1></div>
+        <div class="content"><p><strong>Rule:</strong> If partner leads a suit and you later gain the lead, returning that suit is often the right default.</p>
+<p><strong>Rationale:</strong> Partner&#x27;s opening lead often means they&#x27;re trying to establish tricks in that suit. Your job may be to help them continue that plan rather than start a completely new suit.</p>
+<p><strong>Example:</strong> Partner leads a small heart against 3NT.</p>
+<ul>
+<li>Partner: ♥Q10xxx</li>
+<li>Dummy: ♥xx</li>
+<li>You: ♥Kxx</li>
+<li>Declarer: ♥Axx</li>
+</ul>
+<p>On the first trick, you play ♥K and declarer wins ♥A. Later you gain the lead in another suit.</p>
+<p>Now return a heart.</p>
+<p>Declarer&#x27;s ace is already gone, and partner still has ♥Q10xx. Returning the suit helps partner establish and eventually cash those hearts. If you switch to an unrelated suit instead, you may give declarer the time they need to make their contract.</p>
+<p>This is a default, not an absolute rule. The auction, dummy, and cards already played may give you a good reason to switch.</p>
+<blockquote><strong>Partner&#x27;s lead is information: if they appear to be establishing a suit, help them finish the job.</strong></blockquote><div class="example-launch"><button class="deal-open" data-deal="21">Try the full-deal example →</button></div></div>
+      </div>
+    </section>
+</main>
+<footer>
+  <button id="prev">← Previous</button>
+  <div><div class="dots" id="dots"></div><div class="hint">← → keys also work</div></div>
+  <button id="next">Next →</button>
+</footer>
+</div>
+
+
+<div class="deal-modal" id="dealModal" aria-hidden="true">
+  <div class="deal-card">
+    <div class="deal-top">
+      <div><div class="eyebrow" id="dealTip"></div><h2 id="dealTitle" style="margin:0"></h2></div>
+      <button id="dealClose">Close</button>
+    </div>
+    <div class="deal-question" id="dealQuestion"></div>
+    <div class="deal-instruction">Study your hand, dummy, contract and opening lead before revealing the defenders.</div>
+    <div class="table-wrap"><div class="bridge-table" id="dealTable"></div></div>
+    <div class="deal-actions"><button class="reveal-btn" id="dealReveal">Reveal</button></div>
+    <div class="answer" id="dealAnswer">
+      <h3>The key</h3><div class="keybox" id="dealKey"></div>
+      <p id="dealExplain"></p>
+      <div class="full-label">FULL DEAL</div>
+      <div class="table-wrap"><div class="bridge-table" id="fullDealTable"></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal">
+ <div class="modal-card">
+  <div class="modal-head"><h2>Quick reference</h2><button class="close" id="close">Close</button></div>
+  <div class="content"><p class="lead-in">If you want these to become automatic, I&#x27;d memorise this sequence:</p>
+<p><strong>Before playing:</strong></p>
+<p><strong>Count winners in NT; count losers in suits → identify where extra tricks/discards come from → identify entries.</strong></p>
+<p><strong>In a trump contract:</strong></p>
+<p><strong>Draw trumps unless you need them → ruff losers in short hand → take urgent discards → then draw trumps → cash established winners.</strong></p>
+<p><strong>In NT:</strong></p>
+<p><strong>Identify your source of tricks → establish it early → preserve entries → don&#x27;t cash controls unnecessarily → lose necessary tricks while you still control other suits.</strong></p>
+<p><strong>Technique:</strong></p>
+<p><strong>High cards from short side first → lead towards honours → don&#x27;t take unnecessary finesses → combine your chances → count every suit.</strong></p>
+<p><strong>Defence:</strong></p>
+<p><strong>Second hand low → third hand high → cover honours when it promotes → return partner&#x27;s suit unless there&#x27;s a reason to switch → use the auction → count declarer&#x27;s tricks → decide whether you need active or passive defence.</strong></p>
+<p>Those ~20 principles will do far more for your actual results at this stage than learning another twenty bidding conventions.</p></div>
+ </div>
+</div>
+
+<script>
+const tips=[...document.querySelectorAll('.tip')];
+let idx=Math.max(0,Math.min(tips.length-1,(parseInt(location.hash.slice(1))||1)-1));
+const main=document.getElementById('main'), bar=document.getElementById('bar'), counter=document.getElementById('counter');
+const prev=document.getElementById('prev'), next=document.getElementById('next'), dots=document.getElementById('dots');
+tips.forEach((_,i)=>{const d=document.createElement('span');d.className='dot';d.title='Tip '+(i+1);d.onclick=()=>show(i);dots.appendChild(d)});
+const toc=document.getElementById('toc');
+const groups=[
+ {name:'Trump management', nums:[1,2,3,4]},
+ {name:'Building & reaching winners', nums:[5,6,7,8,9]},
+ {name:'Finesses & combining chances', nums:[10,11,12]},
+ {name:'Counting & inference', nums:[13,14]},
+ {name:'Defence', nums:[15,16,17,18,19,20,21]}
+];
+const tocButtons=[];
+groups.forEach(g=>{
+ const wrap=document.createElement('div'); wrap.className='toc-group';
+ const title=document.createElement('div'); title.className='toc-group-title'; title.textContent=g.name;
+ wrap.appendChild(title);
+ g.nums.forEach(n=>{
+   const i=n-1, t=tips[i];
+   const b=document.createElement('button');
+   b.className='toc-item';
+   b.innerHTML='<span>'+n+'.</span> '+t.querySelector('h1').textContent;
+   b.onclick=()=>show(i);
+   wrap.appendChild(b); tocButtons[i]=b;
+ });
+ toc.appendChild(wrap);
+});
+function show(i){
+ idx=Math.max(0,Math.min(tips.length-1,i));
+ tips.forEach((t,j)=>t.classList.toggle('active',j===idx));
+ [...dots.children].forEach((d,j)=>d.classList.toggle('active',j===idx));
+ tocButtons.forEach((d,j)=>d && d.classList.toggle('active',j===idx));
+ if(tocButtons[idx]) tocButtons[idx].scrollIntoView({block:'nearest'});
+ counter.textContent=(idx+1)+' / '+tips.length;
+ bar.style.width=((idx+1)/tips.length*100)+'%';
+ prev.disabled=idx===0; next.disabled=idx===tips.length-1;
+ location.hash=idx+1; main.scrollTop=0;
+}
+prev.onclick=()=>show(idx-1); next.onclick=()=>show(idx+1);
+document.addEventListener('keydown',e=>{if(e.key==='ArrowRight')show(idx+1);if(e.key==='ArrowLeft')show(idx-1);if(e.key==='Escape')modal.classList.remove('open')});
+const modal=document.getElementById('modal');
+document.getElementById('summaryOpen').onclick=()=>modal.classList.add('open');
+document.getElementById('close').onclick=()=>modal.classList.remove('open');
+modal.onclick=e=>{if(e.target===modal)modal.classList.remove('open')};
+show(idx);
+
+let wheelLock=false, boundaryAccum=0;
+main.addEventListener('wheel',e=>{
+ const atTop=main.scrollTop<=1;
+ const atBottom=Math.ceil(main.scrollTop+main.clientHeight)>=main.scrollHeight-1;
+ const outward=(e.deltaY<0&&atTop)||(e.deltaY>0&&atBottom);
+ if(!outward){boundaryAccum=0;return;}
+ boundaryAccum+=Math.abs(e.deltaY);
+ if(boundaryAccum>110&&!wheelLock){
+   wheelLock=true; boundaryAccum=0;
+   show(idx+(e.deltaY>0?1:-1));
+   setTimeout(()=>wheelLock=false,450);
+ }
+},{passive:true});
+
+
+const DEALS = {"1": {"contract": "4♠ by South", "lead": "♥Q", "role": "declarer", "N": {"S": "863", "H": "A5", "D": "AKQJ7", "C": "862"}, "E": {"S": "95", "H": "8763", "D": "9642", "C": "KQ10"}, "S": {"S": "AKQJ2", "H": "K42", "D": "5", "C": "J743"}, "W": {"S": "1074", "H": "QJ109", "D": "1083", "C": "A95"}, "key": "Draw trumps before cashing the side-suit winners.", "explain": "Start by counting what you already have. On a normal trump break, the combined hands contain 5 spade tricks (♠AKQJ2), 2 heart tricks (♥A and ♥K), and at least 4 immediate diamond tricks (♦A-K-Q-J): already 11 potential winners, more than the 10 you need. The problem is not finding tricks; it is stopping the defenders from ruffing your side-suit winners. Win the ♥Q lead with ♥A or ♥K, then draw the opposing spades. Only after their trumps are gone should you cash the diamonds. You do not need dummy’s trumps for ruffs, so there is no reason to leave enemy trumps outstanding."}, "2": {"contract": "4♠ by South", "lead": "♦Q", "role": "declarer", "N": {"S": "863", "H": "A74", "D": "A62", "C": "KQ84"}, "E": {"S": "954", "H": "KJ83", "D": "974", "C": "1063"}, "S": {"S": "AKQJ2", "H": "62", "D": "K53", "C": "A75"}, "W": {"S": "107", "H": "Q1095", "D": "QJ108", "C": "J92"}, "key": "Ruff a heart loser in dummy before drawing all the trumps.", "explain": "Count losers in South: the two small hearts are the obvious problem. Dummy has ♥A and three small spades, so dummy can dispose of one of those heart losers by ruffing it. If you draw three rounds of spades immediately, you use up dummy’s trumps and lose that opportunity. Win the diamond lead, cash ♥A, then arrange to ruff South’s remaining heart in dummy. After taking the useful short-hand ruff, draw the outstanding trumps."}, "3": {"contract": "4♠ by South", "lead": "♣K", "role": "declarer", "N": {"S": "863", "H": "84", "D": "AKQ74", "C": "A85"}, "E": {"S": "1095", "H": "K973", "D": "962", "C": "1064"}, "S": {"S": "KQJ42", "H": "J62", "D": "J5", "C": "732"}, "W": {"S": "A7", "H": "AQ105", "D": "1083", "C": "KQJ9"}, "key": "Take the heart discard before giving the defenders the lead with ♠A.", "explain": "The defenders still own ♠A, so you cannot draw trumps without surrendering the lead. South has vulnerable heart losers, while dummy has immediate ♦A-K-Q winners that can provide a discard. Win ♣A and cash enough diamonds to throw a heart from South before touching trumps. Then attack spades. The order matters because once West wins ♠A, the defence may be able to cash hearts before you regain control."}, "4": {"contract": "4♠ by South", "lead": "♣Q", "role": "declarer", "N": {"S": "863", "H": "AK74", "D": "62", "C": "A852"}, "E": {"S": "95", "H": "J83", "D": "974", "C": "J10643"}, "S": {"S": "AKQJ2", "H": "62", "D": "AK53", "C": "K7"}, "W": {"S": "1074", "H": "Q1095", "D": "QJ108", "C": "Q9"}, "key": "If you need a ruff, make it in dummy—the short-trump hand.", "explain": "South starts with five spades; those five cards are already your main trump tricks. If South ruffs a side-suit card, you normally just use one of those same five spades earlier, so the ruff has not added a trump trick. Dummy has only three spades. A ruff in dummy can sit on top of the tricks generated by South’s long trump holding: roughly 5 trump tricks in South + 1 ruff in dummy = 6 trump tricks. The useful question is therefore not simply “can I ruff?” but “does this ruff create an extra trick?”"}, "5": {"contract": "3NT by South", "lead": "♥J", "role": "declarer", "N": {"S": "862", "H": "A74", "D": "AK974", "C": "85"}, "E": {"S": "974", "H": "Q863", "D": "1053", "C": "Q106"}, "S": {"S": "AK3", "H": "K2", "D": "QJ2", "C": "AJ742"}, "W": {"S": "QJ105", "H": "J1095", "D": "86", "C": "K93"}, "key": "Cash the high diamonds from the short side first.", "explain": "The combined diamond holding is ♦AK974 opposite ♦QJ2. Your goal is to cash the long diamonds in North without stranding them. Start with a high diamond from South—♦Q or ♦J—then continue to dummy’s ♦A and ♦K. That sequence leaves you in North, the hand containing the extra diamond length. Reversing the order can leave you in South after the short side is exhausted, with winning diamonds in dummy but no convenient way to reach them."}, "6": {"contract": "3NT by South", "lead": "♠Q", "role": "declarer", "N": {"S": "A62", "H": "85", "D": "KQJ107", "C": "A84"}, "E": {"S": "8754", "H": "J964", "D": "953", "C": "Q9"}, "S": {"S": "K3", "H": "AK2", "D": "842", "C": "KJ753"}, "W": {"S": "QJ109", "H": "Q1073", "D": "A6", "C": "1062"}, "key": "Preserve ♣A as the entry to dummy’s diamonds.", "explain": "Dummy’s ♦K-Q-J-10-7 will become a source of tricks once ♦A is forced out. But establishing the suit is useless if you cannot return to it. Dummy’s ♣A is the vital outside entry, so do not cash it casually. Attack diamonds, let West take ♦A, regain the lead, and later use ♣A to cross to dummy and cash the established diamonds. Always solve both halves of a long-suit problem: how to establish it, and how to get back to it."}, "7": {"contract": "3NT by South", "lead": "♠Q", "role": "declarer", "N": {"S": "A62", "H": "K73", "D": "A84", "C": "KQJ10"}, "E": {"S": "8754", "H": "964", "D": "J95", "C": "982"}, "S": {"S": "K3", "H": "AQ2", "D": "K732", "C": "7543"}, "W": {"S": "QJ109", "H": "J1085", "D": "Q106", "C": "A6"}, "key": "Attack clubs immediately; keep your outside winners as controls.", "explain": "Your immediate high cards are useful, but clubs are where the extra tricks come from: dummy has ♣K-Q-J-10 and the missing ♣A must be driven out. Play clubs early while ♠A/K, ♥A/Q/K and ♦A/K still give you control of the other suits. If you first cash those outside winners, you remove your own safety cards and only then hand the defenders ♣A. Establish the source of tricks first; cash the already-secure winners later."}, "8": {"contract": "3NT by South", "lead": "♠Q", "role": "declarer", "N": {"S": "K62", "H": "Q73", "D": "864", "C": "KQ84"}, "E": {"S": "8754", "H": "9654", "D": "932", "C": "J9"}, "S": {"S": "A3", "H": "AK2", "D": "KQJ10", "C": "A653"}, "W": {"S": "QJ109", "H": "J108", "D": "A75", "C": "1072"}, "key": "Lose to ♦A now, while the other suits are still controlled.", "explain": "You have 7 immediate winners: ♠A-K (2), ♥A-K-Q (3) and ♣A-K (2). Diamonds can supply the extra tricks, but ♦A must win once. That loser is unavoidable, so choose the safe moment to concede it: attack diamonds immediately while your spade, heart and club controls are intact. If you cash the seven top winners first, then lead a diamond, the defender wins ♦A after you have used up the cards that were preventing the other suits from being run."}, "9": {"contract": "3NT by South", "lead": "♠5", "role": "declarer", "N": {"S": "83", "H": "KQ7", "D": "AJ108", "C": "K863"}, "E": {"S": "Q104", "H": "10864", "D": "Q952", "C": "97"}, "S": {"S": "A62", "H": "A32", "D": "K63", "C": "AJ52"}, "W": {"S": "KJ975", "H": "J95", "D": "74", "C": "Q104"}, "key": "Hold up ♠A to break the defenders’ communication.", "explain": "West’s ♠5 lead is consistent with a five-card suit. With ♠A62 opposite ♠83, taking the ace immediately leaves East with spades that can later be returned to West. Instead, duck the first two spade rounds and take ♠A on the third. If East began with three spades, East is now out. Should East later win a trick, there is no spade left to return to West’s remaining winners. You are using the ace to control when the suit can be run."}, "10": {"contract": "3NT by South", "lead": "♣J", "role": "declarer", "N": {"S": "864", "H": "732", "D": "AK74", "C": "A85"}, "E": {"S": "J952", "H": "J1086", "D": "J93", "C": "Q7"}, "S": {"S": "AQ", "H": "AQ4", "D": "862", "C": "K6432"}, "W": {"S": "K1073", "H": "K95", "D": "Q105", "C": "J109"}, "key": "Lead a small spade from North towards South’s ♠AQ.", "explain": "The missing card that matters is ♠K. South’s ♠AQ becomes more powerful when a small card is led towards it. Lead a low spade from North. If East plays low, you can play ♠Q; when ♠K is favourably placed with West, the queen wins. Starting by leading ♠Q away from South gives the defender holding ♠K after it an easy cover. Unsupported honours generally prefer small cards led towards them."}, "11": {"contract": "4♠ by South", "lead": "♦Q", "role": "declarer", "N": {"S": "K84", "H": "AQ6", "D": "A63", "C": "K852"}, "E": {"S": "106", "H": "J985", "D": "8752", "C": "J97"}, "S": {"S": "AQJ952", "H": "32", "D": "K4", "C": "A63"}, "W": {"S": "73", "H": "K1074", "D": "QJ109", "C": "Q104"}, "key": "You already have ten tricks; do not risk the contract on ♥Q.", "explain": "Count before finessing. The combined hands give you 6 spade tricks, ♥A (1), ♦A-K (2) and ♣A (1): exactly 10 certain tricks, which is all 4♠ requires. The ♥Q finesse is only for an overtrick. Here it would lose to West’s ♥K and unnecessarily give the defence the lead. Draw trumps and cash your ten winners. A finesse is a tool for finding needed tricks, not something you take merely because it is available."}, "12": {"contract": "3NT by South", "lead": "♠J", "role": "declarer", "N": {"S": "A63", "H": "J74", "D": "K84", "C": "AK73"}, "E": {"S": "754", "H": "10653", "D": "962", "C": "J102"}, "S": {"S": "KQ2", "H": "AQ2", "D": "AJ53", "C": "965"}, "W": {"S": "J1098", "H": "K98", "D": "Q107", "C": "Q84"}, "key": "Test the 3–3 club break before taking the heart finesse.", "explain": "First count: ♠A-K-Q = 3 tricks, ♥A = 1, ♦A-K = 2 and ♣A-K = 2, for 8 immediate tricks. You need one more. Clubs offer one chance: if the defenders’ six clubs split 3–3, after three rounds dummy’s fourth club is established. The ♥Q finesse offers another chance. Testing clubs does not destroy the heart finesse, so try clubs first. On this deal they are 3–3, giving you the ninth trick; the heart finesse would have lost to West’s ♥K. The correct order preserves both chances."}, "13": {"contract": "4♠ by South", "lead": "♦Q", "role": "declarer", "N": {"S": "863", "H": "AK7", "D": "642", "C": "KQ84"}, "E": {"S": "95", "H": "J965", "D": "9875", "C": "1072"}, "S": {"S": "AKQJ2", "H": "32", "D": "AK3", "C": "A65"}, "W": {"S": "1074", "H": "Q1084", "D": "QJ10", "C": "J93"}, "key": "Count opposing trumps, not merely the number of rounds you have played.", "explain": "You and dummy hold 8 spades, so the defenders started with exactly 5. Play one round and both defenders follow: 3 enemy spades remain. Play a second round and both follow again: only 1 remains. That is the useful fact. Before cashing side-suit winners, decide whether that final enemy trump can hurt you; if it can, draw it."}, "14": {"contract": "4♥ by South", "lead": "♣Q", "role": "declarer", "N": {"S": "K84", "H": "AK73", "D": "A84", "C": "862"}, "E": {"S": "J963", "H": "10986", "D": "96", "C": "1095"}, "S": {"S": "A2", "H": "QJ42", "D": "K3", "C": "AK743"}, "W": {"S": "Q1075", "H": "5", "D": "QJ10752", "C": "QJ"}, "key": "West’s discard tells you the original heart split exactly: West 1, East 4.", "explain": "You and dummy began with 8 hearts, leaving 5 for the defenders. Both defenders follow to ♥A. On ♥K, East follows but West discards. West therefore had exactly one heart originally; East had the other four. This is not an estimate. Record that fact mentally and combine it with West’s revealed diamond length and later play to reconstruct the unseen hands."}, "15": {"contract": "3NT by South", "lead": "♠Q", "role": "defender", "N": {"S": "A74", "H": "AQ6", "D": "853", "C": "K852"}, "E": {"S": "J985", "H": "10972", "D": "J96", "C": "Q9"}, "S": {"S": "K32", "H": "J54", "D": "AK2", "C": "AJ64"}, "W": {"S": "Q106", "H": "K83", "D": "Q1074", "C": "1073"}, "key": "Play low from ♥K83 when South leads a small heart towards dummy.", "explain": "You are second hand. If you play ♥K immediately, dummy simply takes ♥A and ♥Q becomes established. Play low instead. Declarer must decide whether to commit ♥Q; if the queen is played, your ♥K remains above it for later. The point of “second hand low” is to avoid sacrificing an honour before declarer has committed one."}, "16": {"contract": "3NT by South", "lead": "♥4", "role": "defender", "N": {"S": "A83", "H": "762", "D": "KQ84", "C": "Q73"}, "E": {"S": "9652", "H": "KJ3", "D": "962", "C": "1095"}, "S": {"S": "KQ4", "H": "A98", "D": "AJ5", "C": "AJ62"}, "W": {"S": "J107", "H": "Q1054", "D": "1073", "C": "K84"}, "key": "Play ♥K as third hand when dummy plays low.", "explain": "Partner leads ♥4, dummy contributes ♥2, and you hold ♥KJ3. Play ♥K. If declarer wants the trick, South must spend ♥A. That removes declarer’s main heart stopper while partner retains ♥Q10x, bringing the defence much closer to establishing heart tricks. Playing low may let declarer win cheaply with ♥8 or ♥9 while keeping ♥A. Third hand usually plays the highest card necessary to force declarer’s higher card."}, "17": {"contract": "4♠ by South", "lead": "♦Q", "role": "defender", "N": {"S": "A84", "H": "A63", "D": "K85", "C": "8742"}, "E": {"S": "62", "H": "J94", "D": "J9632", "C": "1065"}, "S": {"S": "KQJ1095", "H": "Q10872", "D": "A", "C": "A"}, "W": {"S": "73", "H": "K5", "D": "Q1074", "C": "KQJ93"}, "key": "Cover ♥Q with ♥K because doing so promotes partner’s ♥J.", "explain": "South leads ♥Q. If you cover with ♥K and dummy takes ♥A, the queen, king and ace all disappear on one trick. Partner’s ♥J is then above declarer’s remaining ♥10 and can become a defensive winner. If you do not cover, ♥Q can win while declarer retains ♥10 and dummy retains ♥A. The useful rule is not “always cover”; cover when the sacrifice promotes another card for your side."}, "18": {"contract": "4♠ by South", "lead": "♣A", "auction": "South 1♠ — North 4♠", "role": "defender", "N": {"S": "876", "H": "4", "D": "AQ85", "C": "KJ862"}, "E": {"S": "103", "H": "J10975", "D": "9632", "C": "Q10"}, "S": {"S": "AQJ952", "H": "32", "D": "K4", "C": "953"}, "W": {"S": "K4", "H": "AKQ86", "D": "J107", "C": "A74"}, "key": "Lead trumps to remove dummy’s ability to ruff South’s heart losers.", "explain": "Dummy’s shape is the clue: only one heart but three spades. South is likely to have heart losers that can be ruffed with those small dummy trumps. Your ♥A-K-Q may look attractive, but after dummy’s singleton is gone, further heart leads can simply provide declarer with ruffs. When you get the opportunity, switch to a trump. Each trump you remove from dummy is one fewer heart loser declarer can ruff there."}, "19": {"contract": "4♠ by South", "lead": "♣K", "role": "defender", "N": {"S": "K84", "H": "86", "D": "AKQJ7", "C": "862"}, "E": {"S": "106", "H": "QJ1094", "D": "963", "C": "1074"}, "S": {"S": "AQJ952", "H": "K32", "D": "42", "C": "A5"}, "W": {"S": "73", "H": "A75", "D": "1085", "C": "KQJ93"}, "key": "Take the heart trick before South’s heart loser disappears on dummy’s diamonds.", "explain": "Dummy has ♦A-K-Q-J-7: a large source of discards. South has ♥K32, so the small hearts are losers now but can be thrown away once declarer reaches dummy and cashes diamonds. Your ♥A will remain an ace, but the loser you hoped to capture may no longer exist. If you have the lead before declarer can take those discards, cash the urgent heart winner."}, "20": {"contract": "3NT by South", "lead": "♠J", "auction": "South opened 1NT (15–17); North raised to 3NT", "role": "defender", "N": {"S": "863", "H": "Q74", "D": "K85", "C": "Q862"}, "E": {"S": "Q94", "H": "K96", "D": "J963", "C": "A105"}, "S": {"S": "AK2", "H": "A32", "D": "A42", "C": "KJ73"}, "W": {"S": "J1075", "H": "J1085", "D": "Q107", "C": "94"}, "key": "Use the 1NT auction and the visible points to constrain partner’s strength.", "explain": "South’s 1NT opening promises 15–17 HCP. Dummy has 7 HCP and your East hand has 10. That accounts for 32–34 of the deck’s 40 HCP, leaving West only about 6–8. Therefore any line of play that requires partner to hold several missing honours is impossible or very unlikely. Keep using the auction after the opening lead: every bid is information about the unseen cards."}, "21": {"contract": "3NT by South", "lead": "♥4", "role": "defender", "N": {"S": "A84", "H": "72", "D": "KQ85", "C": "Q863"}, "E": {"S": "9652", "H": "K83", "D": "963", "C": "1075"}, "S": {"S": "KQ3", "H": "AJ9", "D": "AJ42", "C": "AJ2"}, "W": {"S": "J107", "H": "Q10654", "D": "107", "C": "K94"}, "key": "When you regain the lead, return partner’s heart suit.", "explain": "Partner led ♥4, dummy played low and your ♥K forced declarer’s ♥A. That first trick tells you what the defence is trying to do: establish hearts. Partner still has ♥Q10xx after the ace has gone. If you later win a trick, return a heart so partner can continue developing and eventually cash that suit. Switching elsewhere abandons a plan that is already partly established unless the later play gives you a specific reason to do so."}};
+const suitSymbols={S:'♠',H:'♥',D:'♦',C:'♣'};
+function handHTML(seat,hand,hidden=false,role=''){
+ const nm={N:'NORTH',E:'EAST',S:'SOUTH',W:'WEST'}[seat];
+ const roleHTML=role?`<span class="role-tag">${role}</span>`:'';
+ const head=`<div class="hand-head"><div class="seat">${nm}</div>${roleHTML}</div>`;
+ if(hidden) return `<div class="hand ${seat.toLowerCase()} facedown">${head}<div class="cardback-body"><div class="cardback-pips">♠ ♥ ♦ ♣</div></div></div>`;
+ const rows=['S','H','D','C'].map(s=>`<div class="suitline ${s==='H'||s==='D'?'red':'black'}"><span>${suitSymbols[s]}</span><span>${hand[s].replaceAll('10','10 ')}</span></div>`).join('');
+ return `<div class="hand ${seat.toLowerCase()}">${head}<div class="hand-body">${rows}</div></div>`;
+}
+function centreHTML(d){
+ let auction=d.auction?`<div class="table-auction"><span>AUCTION</span>${d.auction}</div>`:'';
+ return `<div class="table-centre"><div class="table-contract"><span>CONTRACT</span><strong>${d.contract}</strong></div>${auction}<div class="lead-chip"><span class="lead-label">OPENING LEAD</span><span class="lead-card">${d.lead}</span></div></div>`;
+}
+const dealModal=document.getElementById('dealModal'), dealAnswer=document.getElementById('dealAnswer');
+let currentDealNumber=null;
+function renderDeal(n){
+ currentDealNumber=Number(n);
+ const d=DEALS[n], tip=tips[n-1];
+ document.getElementById('dealTip').textContent='FULL-DEAL EXAMPLE';
+ document.getElementById('dealTitle').textContent='';
+ let meta=`<span class="meta-pill contract-pill">CONTRACT&nbsp;&nbsp;${d.contract}</span>`;
+ if(d.auction) meta+=`<span class="meta-pill auction-pill">Auction: ${d.auction}</span>`;
+ 
+ document.getElementById('dealQuestion').textContent=d.role==='defender'?'What is the key to defeating this contract?':'What is the key to making this contract?';
+ document.getElementById('dealTable').innerHTML=handHTML('N',d.N,false,'DUMMY')+handHTML('W',d.W,true,'DEFENDER')+centreHTML(d)+handHTML('E',d.E,true,'DEFENDER')+handHTML('S',d.S,false,d.role==='defender'?'DECLARER':'YOU · DECLARER');
+ document.getElementById('fullDealTable').innerHTML=handHTML('N',d.N,false,'DUMMY')+handHTML('W',d.W,false,'WEST')+centreHTML(d)+handHTML('E',d.E,false,'EAST')+handHTML('S',d.S,false,'DECLARER');
+ document.getElementById('dealKey').textContent=d.key;
+ document.getElementById('dealExplain').textContent=d.explain;
+ dealAnswer.classList.remove('open');
+ document.getElementById('dealReveal').style.display='';
+ dealModal.classList.add('open'); dealModal.setAttribute('aria-hidden','false'); dealModal.scrollTop=0;
+}
+document.querySelectorAll('.deal-open').forEach(b=>b.onclick=()=>renderDeal(b.dataset.deal));
+document.getElementById('dealReveal').onclick=()=>{
+ const n=currentDealNumber, d=DEALS[n];
+ if(!n || !d) return;
+ document.getElementById('dealTip').textContent='TIP '+n+' · PRINCIPLE';
+ document.getElementById('dealTitle').textContent=tips[n-1].querySelector('h1').textContent;
+ dealAnswer.classList.add('open');
+ document.getElementById('dealReveal').style.display='none';
+ document.getElementById('dealTable').innerHTML=handHTML('N',d.N,false,'DUMMY')+handHTML('W',d.W,false,'WEST')+centreHTML(d)+handHTML('E',d.E,false,'EAST')+handHTML('S',d.S,false,'DECLARER');
+ dealAnswer.scrollIntoView({behavior:'smooth',block:'start'});
+};
+function closeDeal(){dealModal.classList.remove('open');dealModal.setAttribute('aria-hidden','true')}
+document.getElementById('dealClose').onclick=closeDeal;
+dealModal.addEventListener('click',e=>{if(e.target===dealModal)closeDeal()});
+
+</script>
+</body>
+</html>
